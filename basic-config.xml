@@ -1,0 +1,113 @@
+<!--
+	Recommendations based off presentation by Mark Russinovich at RSA 2017
+	Slides: https://onedrive.live.com/view.aspx?resid=D026B4699190F1E6!2843&ithint=file%2cpptx&app=PowerPoint&authkey=!AMvCRTKB_V1J5ow
+-->
+
+<Sysmon schemaversion="3.40">
+	<HashAlgorithms>SHA256,IMPHASH</HashAlgorithms>
+	<EventFiltering>
+		<!--SYSMON EVENT ID 1 : PROCESS CREATION-->
+			<ProcessCreate onmatch="exclude">
+				<!-- Log All -->
+				<!-- <IntegrityLevel>System</IntegrityLevel> --> <!-- An attacker with System can already turn off Sysmon -->
+			</ProcessCreate>
+		<!--SYSMON EVENT ID 2 : FILE CREATION TIME RETROACTIVELY CHANGED IN THE FILESYSTEM-->
+			<FileCreateTime onmatch="exclude">
+				<!-- Exclude known processes -->
+				<Image condition="is">C:\Windows\System32\spoolsv.exe</Image>
+			</FileCreateTime>
+		<!--SYSMON EVENT ID 3 : NETWORK CONNECTION INITIATED-->
+			<NetworkConnect onmatch="exclude">
+				<!-- Log all non-browser activity -->
+				<Image condition="contains">C:\Program Files\Mozilla Firefox\firefox.exe</Image>
+				<Image condition="is">C:\Program Files (x86)\Google\Chrome\Application\chrome.exe</Image>
+				<Image condition="is">C:\Program Files\Internet Explorer\iexplore.exe</Image>
+				<!-- Exclude all Beats traffic -->
+				<Image condition="end with">winlogbeat.exe</Image>
+			</NetworkConnect>
+		<!--SYSMON EVENT ID 4 : RESERVED FOR SYSMON STATUS MESSAGES, THIS LINE IS INCLUDED FOR DOCUMENTATION PURPOSES ONLY-->
+			<!--Cannot be filtered.-->
+		<!--SYSMON EVENT ID 5 : PROCESS ENDED-->
+			<ProcessTerminate onmatch="include">
+				<!-- Enable only when investigating a breach -->
+				<Image condition="begin with">C:\Users\</Image>
+			</ProcessTerminate>
+		<!--SYSMON EVENT ID 6 : DRIVER LOADED INTO KERNEL-->
+			<DriverLoad onmatch="exclude">
+				<!-- Log all non-Windows and non-Microsoft -->
+				<Signature condition="is">Microsoft Corporation</Signature>
+	            <Signature condition="is">Microsoft Windows</Signature>
+				<!-- Signature condition="is">VMware</Signature -->
+				<!--
+					* On a known clean system set to exclude and reboot
+					* Query log for loaded drivers: Get-WinEvent -LogName "Microsoft-Windows-Sysmon/Operational" | Where-Object { $_.Id -eq 6 } | ForEach-Object { $_.Properties[4].Value } | Sort-Object -Unique
+					* Add the results to your excluded filter list here
+					<Signature condition="is">Name of Signature Here</Signature>
+				-->
+			</DriverLoad>
+		<!--SYSMON EVENT ID 7 : DLL (IMAGE) LOADED BY PROCESS-->
+			<ImageLoad onmatch="include">
+				<!-- Enable only when investigating a breach -->
+				<Image condition="end with">lsass.exe</Image>
+				<Image condition="contains">C:\Users</Image>
+			</ImageLoad>
+		<!--SYSMON EVENT ID 8 : REMOTE THREAD CREATED-->
+			<CreateRemoteThread onmatch="exclude">
+				<!-- Exclude known processes -->
+				<!-- SourceImage condition="is">C:\Windows\System32\csrss.exe</SourceImage -->
+				<!-- SourceImage condition="is">C:\Windows\System32\winlogon.exe</SourceImage -->
+			</CreateRemoteThread>
+		<!--SYSMON EVENT ID 9 : RAW DISK ACCESS-->
+			<RawAccessRead onmatch="exclude">
+				<!-- Exclude known processes -->
+			</RawAccessRead>
+		<!--SYSMON EVENT ID 10 : INTER-PROCESS ACCESS-->
+			<ProcessAccess onmatch="include">
+				<!-- Include sensitive targets -->
+				<TargetImage condition="image">lsass.exe</TargetImage>
+	            <TargetImage condition="image">winlogon.exe</TargetImage>
+			</ProcessAccess>
+			<ProcessAccess onmatch="exclude">
+				<!-- Exclude legitimate processes -->
+				<SourceImage condition="is">C:\Windows\System32\Taskmgr.exe</SourceImage> <!-- Windows Task Manager -->
+				<SourceImage condition="is">C:\Program Files\VMware\VMware Tools\vmtoolsd.exe</SourceImage> <!-- VMWare Tools -->
+			</ProcessAccess>
+		<!--SYSMON EVENT ID 11 : FILE CREATED-->
+			<FileCreate onmatch="include">
+				<!-- Include autostart entry points -->
+				<TargetFilename condition="contains">\Startup\</TargetFilename>
+			</FileCreate>
+		<!--SYSMON EVENT ID 12 & 13 & 14 : REGISTRY MODIFICATION-->
+			<RegistryEvent onmatch="include">
+				<!-- Include autostart entry points -->
+				<TargetObject condition="contains">Windows\CurrentVersion\Run</TargetObject> <!--Microsoft:Windows: Run keys, incld RunOnce, RunOnceEx, RunServices, RunServicesOnce [Also covers terminal server] -->
+				<TargetObject condition="begin with">HKLM\SYSTEM\CurrentControlSet\Control\SecurityProviders\SecurityProviders</TargetObject>
+				<TargetObject condition="begin with">HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows\Appinit_Dlls\</TargetObject>
+			</RegistryEvent>
+		<!--SYSMON EVENT ID 15 : ALTERNATE DATA STREAM CREATED-->
+			<FileCreateStreamHash onmatch="include">
+				<!-- Include Mark of the Web (MOTW) names -->
+				<TargetFilename condition="contains">Content.Outlook</TargetFilename> <!--Microsoft:Outlook: Attachments--> <!--PRIVACY WARNING-->
+				<TargetFilename condition="contains">Downloads</TargetFilename> <!--Downloaded files. Does not include "Run" files in IE-->
+				<TargetFilename condition="contains">Temp\7z</TargetFilename> <!--7zip extractions-->
+				<TargetFilename condition="end with">.bat</TargetFilename> <!--Batch scripting-->
+				<TargetFilename condition="end with">.cmd</TargetFilename> <!--Batch scripting | Credit @ion-storm -->
+				<TargetFilename condition="end with">.hta</TargetFilename> <!--Scripting-->
+				<TargetFilename condition="end with">.lnk</TargetFilename> <!--Shortcut file | Credit @ion-storm -->
+				<TargetFilename condition="end with">.ps1</TargetFilename> <!--Powershell-->
+				<TargetFilename condition="end with">.ps2</TargetFilename> <!--Powershell-->
+				<TargetFilename condition="end with">.reg</TargetFilename> <!--Registry File-->
+				<TargetFilename condition="end with">.vb</TargetFilename> <!--VisualBasicScripting files-->
+				<TargetFilename condition="end with">.vbe</TargetFilename> <!--VisualBasicScripting files-->
+				<TargetFilename condition="end with">.vbs</TargetFilename> <!--VisualBasicScripting files-->
+			</FileCreateStreamHash>
+		<!--SYSMON EVENT ID 16 : SYSMON CONFIGURATION CHANGE, THIS LINE IS INCLUDED FOR DOCUMENTATION PURPOSES ONLY-->
+			<!--Cannot be filtered.-->
+		<!--SYSMON EVENT ID 17 & 18 : PIPE CREATED / PIPE CONNECTED-->
+			<PipeEvent onmatch="include">
+				<!-- Enable for targeted investigation -->
+			</PipeEvent>
+		<!--SYSMON EVENT ID 19, 20 & 21 : WmiEventFilter, WmiEventConsumer, WmiEventConsumerToFilter-->
+	        <WmiEvent onmatch="include" />
+	</EventFiltering>
+</Sysmon>
