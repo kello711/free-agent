@@ -24,6 +24,9 @@ wheels/
 .installed.cfg
 *.egg
 beats/
+sysmon/
+deploy/
+Include/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -72,6 +75,7 @@ target/
 
 # pyenv
 .python-version
+Scripts/
 
 # celery beat schedule file
 celerybeat-schedule
