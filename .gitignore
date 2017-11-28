@@ -27,7 +27,6 @@ beats/
 sysmon/
 deploy/
 Include/
-agent.zip
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
