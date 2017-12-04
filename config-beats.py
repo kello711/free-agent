@@ -49,6 +49,9 @@ beats = ['winlogbeat',
          'filebeat',
          'metricbeat',
          'packetbeat']
+# Name for the package to be deployed
+# TODO: allow for different package name
+agent = "agent"
 
 # Start of the program
 # Get IP address for Logstash server
@@ -83,6 +86,6 @@ for dirName, subdirList, fileList in os.walk(rootDir):
 
 # Copy sysmon files and package the files for deployment
 print("Packaging agent for deployment...")
-sp.call(["C:\\WINDOWS\\system32\\WindowsPowerShell\\v1.0\\powershell.exe", ".\package-agent.ps1"])
+sp.call(["C:\\WINDOWS\\system32\\WindowsPowerShell\\v1.0\\powershell.exe", ".\package-agent.ps1  -name" + agent])
 
 # Deploy the agent to all systems in range provided
