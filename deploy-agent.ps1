@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-
+Used to deploy sysmon and elastic beats agents to client computers.
 .DESCRIPTION
 
 .PARAMETER name
