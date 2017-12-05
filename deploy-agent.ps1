@@ -7,7 +7,7 @@ Used to deploy sysmon and elastic beats agents to client computers.
 The agent name
 
 .EXAMPLE
-
+deploy-agent agent.zip
 #>
 [CmdletBinding()]
 
