@@ -1,7 +1,22 @@
+<#
+.SYNOPSIS
+
+.DESCRIPTION
+
+.PARAMETER name
+The agent name
+
+.EXAMPLE
+
+#>
+[CmdletBinding()]
+
 # Pull in command line parameters
 param (
-  [string]$name = "agent"
+  [Alias('agent')][string]$name = "agent"
 )
+
+$agent = Get-Item $name
 
 # Get credentials for user to deploy as (i.e. Administrator)
 Try {
@@ -9,7 +24,7 @@ Try {
   $cred = Get-Credential -Credential Kelly -ErrorAction Stop
 }
 Catch {
-  echo "ERROR: You must supply credentials for deployment script."
+  Write-Error "ERROR: You must supply credentials for deployment script."
   Exit
 }
 
@@ -31,10 +46,10 @@ Invoke-Command -Credential $cred -ComputerName $computers -ScriptBlock {
 }
 
 foreach($computer in $computers) {
-  Write-Host "Connecting to $computer..."
+  Write-Verbose "Connecting to $computer..."
   $session = New-PSSession -ComputerName $computer -Credential $cred
 
-  Write-Host "Copying $name.zip to $computer..."
+  Write-Verbose "Copying $name.zip to $computer..."
   Remove-Item -Path "C:\$name.zip" -Force -ErrorAction SilentlyContinue
   Copy-Item "$name.zip" -Destination "C:\$name.zip" -ToSession $session -Force
 
@@ -48,12 +63,12 @@ Invoke-Command -Credential $cred -ComputerName $computers -ArgumentList $name -S
   $hostname = (& hostname)
 
   # Remove old and expand new archive
-  Write-Host "Installing agent archive on $hostname."
+  Write-Verbose "Installing agent archive on $hostname."
   Remove-Item "C:\$name" -Recurse -ErrorAction SilentlyContinue
   Expand-Archive "C:\$name.zip" -DestinationPath "C:\$name\" -Force
   Remove-Item -Path "C:\$name.zip" -Force
 
-  Write-Host "Setting ExecutionPolicy to allow running scripts on $hostname."
+  Write-Verbose "Setting ExecutionPolicy to allow running scripts on $hostname."
   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force
 
   # Move to the newly created directory
@@ -63,17 +78,17 @@ Invoke-Command -Credential $cred -ComputerName $computers -ArgumentList $name -S
   .\sysmon\install-sysmon.ps1
 
   # Install beats
-  Write-Host "Installing beats on ${hostname}:"
+  Write-Verbose "Installing beats on ${hostname}:"
   # Get the names of all files in the beats directory
   $beats = Get-ChildItem .\ -Name *beat
   foreach($beat in $beats) {
     # TODO: Skip packet beat for now need to check config
     if ($beat -eq "packetbeat") { continue }
-    Write-Host "`t$beat..."
+    Write-Verbose "`t$beat..."
     & ".\$beat\install-service-$beat.ps1" | Out-Null
     Start-Service $beat | Out-Null
   }
-  Write-Host "$hostname complete:"
+  Write-Verbose "$hostname complete:"
   Get-Service sysmon,*beat | Select Name,Status | Format-Table -AutoSize
 }
 
