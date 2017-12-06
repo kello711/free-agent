@@ -6,6 +6,7 @@ import os
 import sys
 import subprocess as sp
 import ipaddress
+import argparse
 
 # Method to udate the config file
 def update_config(beat, path):
@@ -55,13 +56,17 @@ beats = ['winlogbeat',
          'filebeat',
          #'metricbeat', # not using based on inital hunt slides
          'packetbeat']
+
 # Name for the package to be deployed
-# TODO: allow for different package name
-agent = "agent"
+parser = argparse.ArgumentParser()
+parser.add_argument("-a", "--agent", help="the name of the agent to create", default="agent")
+args = parser.parse_args()
+agentName = args.agent
+#print(f"Agent name: {agentName}")
 
 # Start of the program
 # Get IP address for Logstash server
-ipAddr = '1.2.3.4' # Remove the fake IP, only here for testing
+ipAddr = '' # Remove the fake IP, only here for testing
 port = ''
 while not valid_ip(ipAddr):
     ipAddr = input("Enter logstash host IP: ")
@@ -70,10 +75,11 @@ if port == '':
     # If nothing entered, use default port for beats input to logstash
     port = '5044'
 
+# Setup path for PowerShell script (may be different on Mac)
+psPath = "C:\\WINDOWS\\system32\\WindowsPowerShell\\v1.0\\powershell.exe"
+sp.call([psPath, "Set-ExecutionPolicy RemoteSigned"])
 # Copy the beats from source zip files via PowerShell script
-print("Setting Windows PowerShell ExecutionPolicy and copying files...")
-sp.call(["C:\\WINDOWS\\system32\\WindowsPowerShell\\v1.0\\powershell.exe", "Set-ExecutionPolicy RemoteSigned"])
-sp.call(["C:\\WINDOWS\\system32\\WindowsPowerShell\\v1.0\\powershell.exe", ".\config-beats.ps1"])
+sp.call([psPath, ".\config-beats.ps1"])
 
 # Setting up the ruamel.yaml to properly read libbeat configs
 yaml = YAML()
@@ -92,8 +98,8 @@ for dirName, subdirList, fileList in os.walk(rootDir):
 
 # Copy sysmon files and package the files for deployment
 print("Packaging agent for deployment...")
-sp.call(["C:\\WINDOWS\\system32\\WindowsPowerShell\\v1.0\\powershell.exe", ".\package-agent.ps1  -name" + agent])
+sp.call([psPath, ".\package-agent.ps1  -name " + agentName])
 
 # Deploy the agent to all systems in range provided
 # Currently being done in a different PowerShell script
-#sp.call(["C:\\WINDOWS\\system32\\WindowsPowerShell\\v1.0\\powershell.exe", ".\deploy-agent.ps1  -name" + agent])
+#sp.call(["C:\\WINDOWS\\system32\\WindowsPowerShell\\v1.0\\powershell.exe", ".\deploy-agent.ps1  -name " + agentName])
