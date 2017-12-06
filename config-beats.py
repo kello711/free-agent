@@ -30,8 +30,12 @@ def update_config(beat, path):
 
     # Output the corrected config to screen, can also dump to a file
     # yaml.dump(loaded_config, sys.stdout)
-    newConfigFile = open("deploy\\" + beat+ "\\" + beat + '.yml', 'w')
-    yaml.dump(loaded_config, newConfigFile)
+    try:
+        newConfigFile = open("deploy\\" + beat+ "\\" + beat + '.yml', 'w')
+        yaml.dump(loaded_config, newConfigFile)
+    except (FileNotFoundError):
+        # Not using this beat
+        pass
 
     return
 
@@ -47,7 +51,7 @@ def valid_ip(address):
 # All the beat types that will be processed
 beats = ['winlogbeat',
          'filebeat',
-         'metricbeat',
+         #'metricbeat',
          'packetbeat']
 # Name for the package to be deployed
 # TODO: allow for different package name
