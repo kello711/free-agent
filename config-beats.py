@@ -7,6 +7,7 @@ import sys
 import subprocess as sp
 import ipaddress
 
+# Method to udate the config file
 def update_config(beat, path):
     # Read the winlogbeat config
     config_doc = open(path + beat + '.yml', 'r')
@@ -48,10 +49,11 @@ def valid_ip(address):
     except:
         return False
 
+# Start of the script
 # All the beat types that will be processed
 beats = ['winlogbeat',
          'filebeat',
-         #'metricbeat',
+         #'metricbeat', # not using based on inital hunt slides
          'packetbeat']
 # Name for the package to be deployed
 # TODO: allow for different package name
@@ -59,7 +61,7 @@ agent = "agent"
 
 # Start of the program
 # Get IP address for Logstash server
-ipAddr = '' # Remove the fake IP, only here for testing
+ipAddr = '1.2.3.4' # Remove the fake IP, only here for testing
 port = ''
 while not valid_ip(ipAddr):
     ipAddr = input("Enter logstash host IP: ")
@@ -93,3 +95,5 @@ print("Packaging agent for deployment...")
 sp.call(["C:\\WINDOWS\\system32\\WindowsPowerShell\\v1.0\\powershell.exe", ".\package-agent.ps1  -name" + agent])
 
 # Deploy the agent to all systems in range provided
+# Currently being done in a different PowerShell script
+#sp.call(["C:\\WINDOWS\\system32\\WindowsPowerShell\\v1.0\\powershell.exe", ".\deploy-agent.ps1  -name" + agent])
