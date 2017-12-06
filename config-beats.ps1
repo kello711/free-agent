@@ -1,5 +1,5 @@
-# Cleanup the deploy directory
-Remove-Item .\deploy\* -recurse
+# Cleanup/create the deploy directory
+New-Item .\deploy -Itemtype Directory -ErrorAction SilentlyContinue
 
 # Get the names of all files in the beats directory
 $beats = Get-ChildItem .\beats\ -Name
