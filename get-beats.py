@@ -13,10 +13,11 @@ else:
     print("'beats' directory already exists")
 
 # All the beat types that will be processed
-beats = ['winlogbeat',
-         'filebeat',
+beats = ['winlogbeat'#,
+         #'filebeat',
          #'metricbeat', # not using based on inital hunt slides
-         'packetbeat']
+         #'packetbeat'
+         ]
 
 # Get the beats
 for beat in beats:

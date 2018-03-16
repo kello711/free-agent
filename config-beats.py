@@ -52,10 +52,12 @@ def valid_ip(address):
 
 # Start of the script
 # All the beat types that will be processed
-beats = ['winlogbeat',
-         'filebeat',
+beats = [
+         'winlogbeat'#,
+         #'filebeat',
          #'metricbeat', # not using based on inital hunt slides
-         'packetbeat']
+         #'packetbeat'
+         ]
 
 # Name for the package to be deployed
 parser = argparse.ArgumentParser()
